@@ -21,23 +21,24 @@ const fetchChildren = async (ids) => {
 
 const traverseTree = async (rootId) => {
   let ids = [rootId];
-  const uniqueIds = {
-    [rootId]: 0,
-  };
+  const uniqueIds = {};
 
   while (ids.length > 0) {
-    const nodes = await fetchChildren(ids);
-    ids = [];
+    const newIds = _.difference(ids, Object.keys(uniqueIds));
+    const alreadyFetchedIds = _.difference(ids, newIds);
+    const nodes = await fetchChildren(newIds);
 
     nodes.forEach((n) => {
-      if (uniqueIds[n.id] === undefined) {
-        uniqueIds[n.id] = n.child_node_ids.length + 1;
-      } else {
+      uniqueIds[n.id] = n.child_node_ids.length;
+      if (n.id !== rootId) {
         uniqueIds[n.id] += 1;
       }
     });
+    alreadyFetchedIds.forEach((id) => {
+      uniqueIds[id] += 1;
+    });
+
     ids = _.uniq(nodes.flatMap((n) => n.child_node_ids));
-    ids = _.difference(ids, Object.keys(uniqueIds));
   }
 
   const uniqueIdEntries = Object.entries(uniqueIds);
